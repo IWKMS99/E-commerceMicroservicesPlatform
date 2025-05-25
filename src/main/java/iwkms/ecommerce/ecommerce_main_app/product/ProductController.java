@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.*;
 
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @RestController
 @RequestMapping("/api")
@@ -16,9 +18,9 @@ public class ProductController {
     private final ProductService productService;
 
     @GetMapping("/products")
-    public ResponseEntity<List<Product>> getAllProducts() {
-        List<Product> products = productService.getAllProducts();
-        return ResponseEntity.ok(products);
+    public ResponseEntity<Page<Product>> getAllProducts(Pageable pageable) {
+        Page<Product> productsPage = productService.getAllProducts(pageable);
+        return ResponseEntity.ok(productsPage);
     }
 
     @GetMapping("/products/{id}")
