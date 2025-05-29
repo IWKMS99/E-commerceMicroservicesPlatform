@@ -23,33 +23,38 @@ public class ProductController {
 
     @GetMapping("/products/{id}")
     public ResponseEntity<Product> getProductById(@PathVariable Long id) {
-        Product product = productService.getProductById(id);
-        if (product != null) {
-            return ResponseEntity.ok(product);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+        return productService.getProductById(id)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/admin/products")
     public ResponseEntity<Product> createProduct(@Valid @RequestBody ProductDto productDto) {
-        Product createdProduct = productService.createProduct(productDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
+        try {
+            Product createdProduct = productService.createProduct(productDto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
     }
 
     @PutMapping("/admin/products/{id}")
     public ResponseEntity<Product> updateProduct(@PathVariable Long id, @Valid @RequestBody ProductDto productDto) {
-        return productService.updateProduct(id, productDto)
-            .map(ResponseEntity::ok)
-            .orElseGet(() -> ResponseEntity.notFound().build());
+        try {
+            return productService.updateProduct(id, productDto)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @DeleteMapping("/admin/products/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
-        if (productService.deleteProduct(id)) {
+        if (productService.productExists(id)) {
+            productService.deleteProduct(id);
             return ResponseEntity.noContent().build();
-        } else {
-            return ResponseEntity.notFound().build();
         }
+        return ResponseEntity.notFound().build();
     }
 }

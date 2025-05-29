@@ -21,13 +21,16 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public Product getProductById(Long id) {
-        return productRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Product not found"));
+    public Optional<Product> getProductById(Long id) {
+        return productRepository.findById(id);
     }
     
     @Transactional
     public Product createProduct(ProductDto productDto) {
+        if (productRepository.existsByName(productDto.getName())) {
+            throw new IllegalArgumentException("Product name already exists");
+        }
+
         Product product = new Product();
         product.setName(productDto.getName());
         product.setDescription(productDto.getDescription());
@@ -50,12 +53,13 @@ public class ProductService {
 
     @Transactional
     public boolean deleteProduct(Long id) {
-        if (productRepository.existsById(id)) {
-            productRepository.deleteById(id);
-            return true;
-        } else {
-            return false;
-        }
+        productRepository.deleteById(id);
+        return true;
     }
-    
+
+    @Transactional(readOnly = true)
+    public boolean productExists(Long id) {
+        return productRepository.existsById(id);
+    }
+
 }
