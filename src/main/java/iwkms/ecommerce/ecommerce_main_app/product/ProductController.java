@@ -1,7 +1,5 @@
 package iwkms.ecommerce.ecommerce_main_app.product;
 
-import java.util.List;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
