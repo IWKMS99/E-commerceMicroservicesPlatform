@@ -1,13 +1,13 @@
-package iwkms.ecommerce.ecommerce_main_app;
+package iwkms.shop.ecommerce;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class EcommerceMainAppApplication {
+public class EcommerceApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(EcommerceMainAppApplication.class, args);
+		SpringApplication.run(EcommerceApplication.class, args);
 	}
 
 }

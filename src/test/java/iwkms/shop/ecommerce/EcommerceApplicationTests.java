@@ -1,10 +1,10 @@
-package iwkms.ecommerce.ecommerce_main_app;
+package iwkms.shop.ecommerce;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class EcommerceMainAppApplicationTests {
+class EcommerceApplicationTests {
 
 	@Test
 	void contextLoads() {
