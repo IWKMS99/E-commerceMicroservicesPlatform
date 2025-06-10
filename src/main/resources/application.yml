@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: ecommerce-platform
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ecommerce_db
+    username: myuser
+    password: fialka
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        default_schema: user_management
+
+server:
+  port: 8080

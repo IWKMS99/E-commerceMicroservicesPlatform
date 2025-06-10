@@ -44,13 +44,6 @@ bin/
 # VS Code
 .vscode/
 
-# Docker
-Dockerfile
-docker-compose.yml
-*.dockerignore
-# Если ты не хочешь игнорировать эти файлы, удали строки выше.
-# Обычно их коммитят, но для локальной разработки можешь игнорировать.
-
 # Redis
 # Локальные файлы конфигурации Redis (если не в Docker)
 redis.conf
