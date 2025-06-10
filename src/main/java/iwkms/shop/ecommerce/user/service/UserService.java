@@ -4,6 +4,7 @@ import iwkms.shop.ecommerce.user.dto.RegisterUserDto;
 import iwkms.shop.ecommerce.user.entity.User;
 import iwkms.shop.ecommerce.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -11,7 +12,7 @@ import org.springframework.stereotype.Service;
 public class UserService {
 
     private final UserRepository userRepository;
-    // TODO: Inject PasswordEncoder here later
+    private final PasswordEncoder passwordEncoder;
 
     public User registerUser(RegisterUserDto registerDto) {
         if (userRepository.findByEmail(registerDto.email()).isPresent()) {
@@ -20,7 +21,7 @@ public class UserService {
 
         User user = new User();
         user.setEmail(registerDto.email());
-        user.setPassword(registerDto.password()); // TODO: Encode the password!
+        user.setPassword(passwordEncoder.encode(registerDto.password()));
         user.setFirstName(registerDto.firstName());
         user.setLastName(registerDto.lastName());
 
