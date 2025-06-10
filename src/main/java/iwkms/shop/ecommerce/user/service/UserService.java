@@ -24,7 +24,6 @@ public class UserService {
         user.setFirstName(registerDto.firstName());
         user.setLastName(registerDto.lastName());
 
-        // 3. Сохраняем в БД
         return userRepository.save(user);
     }
 }
