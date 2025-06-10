@@ -1,0 +1,30 @@
+package iwkms.shop.ecommerce.user.service;
+
+import iwkms.shop.ecommerce.user.dto.RegisterUserDto;
+import iwkms.shop.ecommerce.user.entity.User;
+import iwkms.shop.ecommerce.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class UserService {
+
+    private final UserRepository userRepository;
+    // TODO: Inject PasswordEncoder here later
+
+    public User registerUser(RegisterUserDto registerDto) {
+        if (userRepository.findByEmail(registerDto.email()).isPresent()) {
+            throw new IllegalStateException("Email already taken");
+        }
+
+        User user = new User();
+        user.setEmail(registerDto.email());
+        user.setPassword(registerDto.password()); // TODO: Encode the password!
+        user.setFirstName(registerDto.firstName());
+        user.setLastName(registerDto.lastName());
+
+        // 3. Сохраняем в БД
+        return userRepository.save(user);
+    }
+}
