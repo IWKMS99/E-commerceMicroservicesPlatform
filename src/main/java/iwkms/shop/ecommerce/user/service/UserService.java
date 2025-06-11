@@ -1,5 +1,6 @@
 package iwkms.shop.ecommerce.user.service;
 
+import iwkms.shop.ecommerce.shared.exception.UserAlreadyExistsException;
 import iwkms.shop.ecommerce.user.dto.RegisterUserDto;
 import iwkms.shop.ecommerce.user.entity.User;
 import iwkms.shop.ecommerce.user.repository.UserRepository;
@@ -16,7 +17,7 @@ public class UserService {
 
     public User registerUser(RegisterUserDto registerDto) {
         if (userRepository.findByEmail(registerDto.email()).isPresent()) {
-            throw new IllegalStateException("Email already taken");
+            throw new UserAlreadyExistsException("User with email '" + registerDto.email() + "' already exists");
         }
 
         User user = new User();
