@@ -25,3 +25,4 @@ application:
     jwt:
       secret-key: NGRmOTI3M2QyYjY2ZjY2NjYxZTE4MjY3YjlmYjE4ZGMxZjJkZDQ0YjdiZjM3OTFlN2M5Mjg3ZDYyYmEyMDIxZQ==
       expiration: 86400000
+
