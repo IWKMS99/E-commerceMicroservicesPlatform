@@ -5,6 +5,8 @@ import iwkms.shop.ecommerce.catalog.entity.Category;
 import iwkms.shop.ecommerce.catalog.mapper.CategoryMapper;
 import iwkms.shop.ecommerce.catalog.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,6 +26,9 @@ public class CategoryService {
     }
 
     public CategoryDto createCategory(CategoryDto categoryDto) {
+        if (categoryRepository.findByName(categoryDto.name()).isPresent()) {
+            throw new DataIntegrityViolationException("Category with this name '" + categoryDto.name() + "' already exists");
+        }
         Category category = new Category();
         category.setName(categoryDto.name());
         Category savedCategory = categoryRepository.save(category);
