@@ -13,4 +13,7 @@ public class DomainEventPublisher {
     public void publishOrderCreated(OrderCreatedEvent event) {
         eventPublisher.publishEvent(event);
     }
+    public void publishPaymentCompleted(PaymentCompletedEvent event) {
+        eventPublisher.publishEvent(event);
+    }
 }
