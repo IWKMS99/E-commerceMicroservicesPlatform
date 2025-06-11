@@ -9,6 +9,9 @@ import iwkms.shop.ecommerce.order.entity.OrderItem;
 import iwkms.shop.ecommerce.order.entity.OrderStatus;
 import iwkms.shop.ecommerce.order.mapper.OrderMapper;
 import iwkms.shop.ecommerce.order.repository.OrderRepository;
+import iwkms.shop.ecommerce.shared.event.OrderCreatedEvent;
+import iwkms.shop.ecommerce.shared.event.DomainEventPublisher;
+import iwkms.shop.ecommerce.shared.event.OrderItemMessage;
 import iwkms.shop.ecommerce.shared.exception.ResourceNotFoundException;
 import iwkms.shop.ecommerce.user.entity.User;
 import iwkms.shop.ecommerce.user.repository.UserRepository;
@@ -28,7 +31,7 @@ public class OrderService {
     private final UserRepository userRepository;
     private final CartService cartService;
     private final OrderMapper orderMapper;
-    // private final DomainEventPublisher eventPublisher; // Добавим позже
+    private final DomainEventPublisher eventPublisher;
 
     @Transactional
     public OrderDto createOrder(String userEmail, OrderCreateDto createDto) {
@@ -46,6 +49,10 @@ public class OrderService {
         order.setShippingAddress(createDto.shippingAddress());
         order.setTotalPrice(cart.total());
 
+        List<OrderItemMessage> itemMessages = cart.items().stream()
+                .map(cartItem -> new OrderItemMessage(cartItem.productId(), cartItem.quantity()))
+                .toList();
+
         cart.items().forEach(cartItem -> {
             OrderItem orderItem = new OrderItem();
             orderItem.setProductId(cartItem.productId());
@@ -58,8 +65,9 @@ public class OrderService {
 
         cartService.clearCart(userEmail);
 
-        // TODO: Публикуем событие OrderCreatedEvent
-        // eventPublisher.publishOrderCreated(...);
+        eventPublisher.publishOrderCreated(
+            new OrderCreatedEvent(this, savedOrder.getId(), savedOrder.getUserId(), itemMessages)
+        );
 
         return orderMapper.toDto(savedOrder);
     }
