@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -21,5 +22,10 @@ public class UserController {
         User newUser = userService.registerUser(registerDto);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body("User created successfully with ID: " + newUser.getId());
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<String> getCurrentUser(Authentication authentication) {
+        return ResponseEntity.ok("Hello, " + authentication.getName());
     }
 }
