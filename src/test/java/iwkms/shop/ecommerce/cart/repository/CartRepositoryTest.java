@@ -1,5 +1,3 @@
-// src/test/java/iwkms/shop/ecommerce/cart/repository/CartRepositoryTest.java
-
 package iwkms.shop.ecommerce.cart.repository;
 
 import iwkms.shop.ecommerce.cart.entity.Cart;
