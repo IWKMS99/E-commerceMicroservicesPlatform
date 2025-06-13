@@ -7,6 +7,7 @@ import iwkms.shop.ecommerce.inventory.service.InventoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -17,7 +18,7 @@ public class InventoryController {
     private final InventoryService inventoryService;
 
     @PostMapping("/stock")
-    // TODO: Защитить эндпоинт (только ADMIN)
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<InventoryDto> updateStock(@Valid @RequestBody StockUpdateDto stockUpdateDto) {
         Inventory updatedInventory = inventoryService.addStock(
                 stockUpdateDto.productId(),

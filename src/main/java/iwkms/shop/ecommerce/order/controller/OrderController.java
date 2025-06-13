@@ -36,8 +36,8 @@ public class OrderController {
 
     @GetMapping("/{orderId}")
     public ResponseEntity<OrderDto> getOrderById(@PathVariable UUID orderId, Authentication authentication) {
-        // TODO: Добавить проверку, что пользователь может смотреть только свой заказ
-        OrderDto order = orderService.findOrderById(orderId);
+        String userEmail = authentication.getName();
+        OrderDto order = orderService.findOrderByIdForUser(orderId, userEmail);
         return ResponseEntity.ok(order);
     }
 }

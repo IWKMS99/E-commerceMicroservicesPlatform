@@ -2,6 +2,7 @@ package iwkms.shop.ecommerce.user.service;
 
 import iwkms.shop.ecommerce.shared.exception.UserAlreadyExistsException;
 import iwkms.shop.ecommerce.user.dto.RegisterUserDto;
+import iwkms.shop.ecommerce.user.entity.Role;
 import iwkms.shop.ecommerce.user.entity.User;
 import iwkms.shop.ecommerce.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(registerDto.password()));
         user.setFirstName(registerDto.firstName());
         user.setLastName(registerDto.lastName());
+        user.setRole(Role.USER);
 
         return userRepository.save(user);
     }

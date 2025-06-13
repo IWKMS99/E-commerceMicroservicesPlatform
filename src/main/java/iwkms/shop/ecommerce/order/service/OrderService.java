@@ -12,6 +12,7 @@ import iwkms.shop.ecommerce.order.repository.OrderRepository;
 import iwkms.shop.ecommerce.shared.event.OrderCreatedEvent;
 import iwkms.shop.ecommerce.shared.event.DomainEventPublisher;
 import iwkms.shop.ecommerce.shared.event.OrderItemMessage;
+import iwkms.shop.ecommerce.shared.exception.EmptyCartException;
 import iwkms.shop.ecommerce.shared.exception.ResourceNotFoundException;
 import iwkms.shop.ecommerce.user.entity.User;
 import iwkms.shop.ecommerce.user.repository.UserRepository;
@@ -40,7 +41,7 @@ public class OrderService {
 
         CartDto cart = cartService.getCart(userEmail);
         if (cart.items().isEmpty()) {
-            throw new IllegalStateException("Cannot create an order from an empty cart.");
+            throw new EmptyCartException("Cannot create an order from an empty cart.");
         }
 
         Order order = new Order();
@@ -85,5 +86,19 @@ public class OrderService {
         return orderRepository.findById(orderId)
                 .map(orderMapper::toDto)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+    }
+
+    public OrderDto findOrderByIdForUser(UUID orderId, String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + userEmail));
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        if (!order.getUserId().equals(user.getId())) {
+            throw new ResourceNotFoundException("Order not found with id: " + orderId);
+        }
+
+        return orderMapper.toDto(order);
     }
 }

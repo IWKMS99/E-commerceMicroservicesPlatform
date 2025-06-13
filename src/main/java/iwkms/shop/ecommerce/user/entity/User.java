@@ -18,8 +18,12 @@ public class User {
     private String email;
 
     @Column(nullable = false)
-    private String password; // TODO: Password must be encoded!
+    private String password;
 
     private String firstName;
     private String lastName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;
 }
