@@ -85,4 +85,14 @@ class ProductServiceTest {
             productService.createProduct(createDto);
         });
     }
+
+    @Test
+    void findProductById_whenProductNotFound_shouldThrowResourceNotFoundException() {
+        UUID nonExistentId = UUID.randomUUID();
+        when(productRepository.findById(nonExistentId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> {
+            productService.findProductById(nonExistentId);
+        });
+    }
 }
