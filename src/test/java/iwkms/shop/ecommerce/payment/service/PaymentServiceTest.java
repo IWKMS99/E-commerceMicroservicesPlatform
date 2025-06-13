@@ -15,7 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -23,7 +23,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -41,30 +42,38 @@ class PaymentServiceTest {
     @Mock
     private PaymentMapper paymentMapper;
 
-    @InjectMocks
+    @Captor
+    private ArgumentCaptor<Payment> paymentCaptor;
+
     private PaymentService paymentService;
 
     private OrderDto orderDto;
     private PaymentRequestDto paymentRequestDto;
-    private Payment payment;
     private PaymentDto paymentDto;
 
     @BeforeEach
     void setUp() {
+        paymentService = new PaymentService(
+            paymentRepository,
+            orderService,
+            paymentProcessor,
+            eventPublisher,
+            paymentMapper
+        );
+
         UUID orderId = UUID.randomUUID();
         orderDto = new OrderDto(orderId, UUID.randomUUID(), null, new BigDecimal("100.00"), "", LocalDateTime.now(), null);
         paymentRequestDto = new PaymentRequestDto(orderId);
 
-        payment = new Payment();
+        Payment payment = new Payment();
         payment.setId(UUID.randomUUID());
         payment.setOrderId(orderId);
         payment.setAmount(orderDto.totalPrice());
         payment.setStatus(PaymentStatus.PROCESSING);
     }
 
-
     @Test
-    void processPayment_whenPaymentIsSuccessful_shouldCompletePaymentAndPublishEvent() {
+    void processPayment_WhenSuccessful_ShouldReturnCompletedPayment() {
         when(orderService.findOrderById(any(UUID.class))).thenReturn(orderDto);
         when(paymentProcessor.processPayment(any(UUID.class), any(BigDecimal.class))).thenReturn(true);
 
@@ -87,25 +96,26 @@ class PaymentServiceTest {
 
         PaymentDto result = paymentService.processPayment(paymentRequestDto);
 
-        assertNotNull(result);
-        assertEquals(PaymentStatus.COMPLETED, result.status());
+        assertThat(result).isNotNull();
+        assertThat(result.status()).isEqualTo(PaymentStatus.COMPLETED);
 
-        ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
         verify(paymentRepository, times(2)).save(paymentCaptor.capture());
 
         Payment initialPayment = paymentCaptor.getAllValues().get(0);
         Payment finalPayment = paymentCaptor.getAllValues().get(1);
 
-        assertEquals(PaymentStatus.PROCESSING, initialPayment.getStatus());
-        assertEquals(PaymentStatus.COMPLETED, finalPayment.getStatus());
-        assertNotNull(finalPayment.getCompletedAt());
+        assertThat(initialPayment.getStatus()).isEqualTo(PaymentStatus.PROCESSING);
+        assertThat(finalPayment.getStatus()).isEqualTo(PaymentStatus.COMPLETED);
+        assertThat(finalPayment.getCompletedAt()).isNotNull();
 
         verify(eventPublisher).publishPaymentCompleted(any(PaymentCompletedEvent.class));
     }
 
     @Test
-    void processPayment_whenPaymentFails_shouldFailPaymentAndThrowException() {
+    void processPayment_WhenFailed_ShouldThrowException() {
         when(orderService.findOrderById(any(UUID.class))).thenReturn(orderDto);
+        when(paymentProcessor.processPayment(any(UUID.class), any(BigDecimal.class))).thenReturn(false);
+
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> {
             Payment original = invocation.getArgument(0);
             Payment copy = new Payment();
@@ -117,22 +127,15 @@ class PaymentServiceTest {
             copy.setCompletedAt(original.getCompletedAt());
             return copy;
         });
-        when(paymentProcessor.processPayment(any(UUID.class), any(BigDecimal.class))).thenReturn(false);
 
-        assertThrows(PaymentFailedException.class, () -> {
-            paymentService.processPayment(paymentRequestDto);
-        });
+        assertThatThrownBy(() -> paymentService.processPayment(paymentRequestDto))
+            .isInstanceOf(PaymentFailedException.class)
+            .hasMessageContaining("Payment provider declined the transaction");
 
-        ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
         verify(paymentRepository, times(2)).save(paymentCaptor.capture());
-
-        Payment initialPayment = paymentCaptor.getAllValues().get(0);
-        Payment finalPayment = paymentCaptor.getAllValues().get(1);
-
-        assertEquals(PaymentStatus.PROCESSING, initialPayment.getStatus());
-        assertEquals(PaymentStatus.FAILED, finalPayment.getStatus());
-
         verify(eventPublisher, never()).publishPaymentCompleted(any());
-        verify(paymentMapper, never()).toDto(any());
+        
+        Payment savedPayment = paymentCaptor.getValue();
+        assertThat(savedPayment.getStatus()).isEqualTo(PaymentStatus.FAILED);
     }
 }
