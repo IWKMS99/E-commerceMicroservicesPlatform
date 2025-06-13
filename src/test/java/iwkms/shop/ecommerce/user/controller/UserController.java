@@ -1,61 +1,83 @@
 package iwkms.shop.ecommerce.user.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import iwkms.shop.ecommerce.shared.exception.UserAlreadyExistsException;
 import iwkms.shop.ecommerce.user.dto.RegisterUserDto;
 import iwkms.shop.ecommerce.user.entity.User;
 import iwkms.shop.ecommerce.user.service.UserService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
+@AutoConfigureMockMvc
 class UserControllerTest {
 
+    @Autowired
     private MockMvc mockMvc;
 
-    @Mock
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockBean
     private UserService userService;
 
-    @InjectMocks
-    private UserController userController;
+    @Test
+    void registerUser_shouldReturnCreated_whenRegistrationIsSuccessful() throws Exception {
+        RegisterUserDto registerDto = new RegisterUserDto("new.user@example.com", "password123", "New", "User");
+        User createdUser = new User();
+        createdUser.setId(UUID.randomUUID());
+        when(userService.registerUser(any(RegisterUserDto.class))).thenReturn(createdUser);
 
-    private ObjectMapper objectMapper = new ObjectMapper();
-
-    @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(userController).build();
+        mockMvc.perform(post("/api/v1/users/register")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerDto)))
+                .andExpect(status().isCreated())
+                .andExpect(content().string("User created successfully with ID: " + createdUser.getId()));
     }
 
     @Test
-    void registerUser_whenValidInput_shouldReturnCreated() throws Exception {
-        RegisterUserDto registerDto = new RegisterUserDto("test@example.com", "password123", "Test", "User");
+    void registerUser_shouldReturnConflict_whenUserAlreadyExists() throws Exception {
+        RegisterUserDto registerDto = new RegisterUserDto("existing.user@example.com", "password123", "Existing", "User");
+        when(userService.registerUser(any(RegisterUserDto.class)))
+                .thenThrow(new UserAlreadyExistsException("User with this email already exists"));
 
-        User createdUser = new User();
-        createdUser.setId(UUID.randomUUID());
-        createdUser.setEmail(registerDto.email());
+        mockMvc.perform(post("/api/v1/users/register")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerDto)))
+                .andExpect(status().isConflict());
+    }
 
-        when(userService.registerUser(any(RegisterUserDto.class))).thenReturn(createdUser);
+    @Test
+    @WithMockUser(username = "test.user@example.com")
+    void getCurrentUser_shouldReturnUsername_whenUserIsAuthenticated() throws Exception {
+        mockMvc.perform(get("/api/v1/users/me")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Hello, test.user@example.com"));
+    }
 
-        ResultActions result = mockMvc.perform(post("/api/v1/users/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(registerDto)));
-
-        result.andExpect(status().isCreated())
-                .andExpect(content().string("User created successfully with ID: " + createdUser.getId()));
+    @Test
+    void getCurrentUser_shouldReturnUnauthorized_whenUserIsNotAuthenticated() throws Exception {
+        mockMvc.perform(get("/api/v1/users/me")
+                        .with(csrf()))
+                .andExpect(status().isUnauthorized());
     }
 }
