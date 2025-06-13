@@ -31,29 +31,32 @@ public class PaymentService {
     public PaymentDto processPayment(PaymentRequestDto requestDto) {
         OrderDto order = orderService.findOrderById(requestDto.orderId());
 
-        Payment payment = new Payment();
-        payment.setOrderId(order.id());
-        payment.setAmount(order.totalPrice());
-        payment.setStatus(PaymentStatus.PROCESSING);
-        Payment savedPayment = paymentRepository.save(payment);
+        Payment initialPayment = new Payment();
+        initialPayment.setOrderId(order.id());
+        initialPayment.setAmount(order.totalPrice());
+        initialPayment.setStatus(PaymentStatus.PROCESSING);
+
+        Payment processingPayment = paymentRepository.save(initialPayment);
 
         boolean success = paymentProcessor.processPayment(order.id(), order.totalPrice());
 
         if (success) {
-            savedPayment.setStatus(PaymentStatus.COMPLETED);
-            savedPayment.setCompletedAt(LocalDateTime.now());
-            paymentRepository.save(savedPayment);
+            processingPayment.setStatus(PaymentStatus.COMPLETED);
+            processingPayment.setCompletedAt(LocalDateTime.now());
+
+            Payment completedPayment = paymentRepository.save(processingPayment);
 
             eventPublisher.publishPaymentCompleted(
-                    new PaymentCompletedEvent(this, savedPayment.getId(), order.id(), order.totalPrice())
+                    new PaymentCompletedEvent(this, completedPayment.getId(), order.id(), order.totalPrice())
             );
+
+            return paymentMapper.toDto(completedPayment);
+
         } else {
-            savedPayment.setStatus(PaymentStatus.FAILED);
-            paymentRepository.save(savedPayment);
-            // TODO: Опубликовать PaymentFailedEvent для компенсации
+            processingPayment.setStatus(PaymentStatus.FAILED);
+            paymentRepository.save(processingPayment);
+
             throw new PaymentFailedException("Payment provider declined the transaction for order: " + order.id());
         }
-
-        return paymentMapper.toDto(savedPayment);
     }
 }
